@@ -1,0 +1,29 @@
+#!/bin/bash
+
+case "$1" in
+0)
+    #do nothing
+    ;;
+1)
+    #do nothing
+    ;;
+3)
+    #do nothing
+    ;;
+2)
+    #restart
+    case "$2" in
+
+    SOFT)
+
+        case "$3" in
+
+        2)
+            echo -n "Restarting SSH service (2rd soft critical state)..."
+            systemctl restart sshd
+            ;;
+            esac
+        ;;
+
+esac
+exit 0

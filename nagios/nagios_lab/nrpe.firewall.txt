@@ -1,0 +1,13 @@
+public (active)
+  target: default
+  icmp-block-inversion: no
+  interfaces: enp1s0
+  sources: 
+  services: cockpit dns nrpe ssh
+  ports: 
+  protocols: 
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 

@@ -1,0 +1,18 @@
+#!/bin/bash
+
+STATUS=$(systemctl is-active sshd)
+echo "sshd is currently ${STATUS}"
+case "${STATUS}" in
+  'active')
+    exit 0
+    ;;
+  'inactive')
+    exit 1
+    ;;
+  'failed')
+    exit 2
+    ;;
+  'unknown')
+    exit 3
+    ;;
+esac
