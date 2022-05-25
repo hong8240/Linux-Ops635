@@ -1,0 +1,30 @@
+<%- |	
+	$allowquery,
+	$forwarders,
+	$masters
+| -%>
+
+options {
+        directory "/var/named/";
+        allow-query { <%= allowquery %>; };
+        forwarders { <%= forwarders %>; };
+        listen-on port 53 { 127.0.0.1; 192.168.43.53; };
+        recursion yes;
+};
+
+zone "localhost" {
+        type master;
+        file "named.localhost";
+};
+
+zone "yhong39.ops" {
+        type slave;
+        file "slaves/myzone.txt";
+        masters { <%= masters %>; };
+};
+
+zone "43.168.192.in-addr.arpa." {
+        type slave;
+        file "slaves/revzone.txt";
+        masters { <%= masters %>; };
+};

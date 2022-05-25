@@ -1,0 +1,53 @@
+class named (
+        $allowquery = '192.168.43.0/24',
+        $forwarders = '192.168.43.3',
+        $type = 'slave',
+        $ffile = 'slaves/myzone.txt',
+        $rfile = 'slaves/revzone.txt'
+) {
+      
+        package {'bind':
+                name => bind,
+                ensure => installed,
+        }
+
+        $vari = {
+                'allowquery' => $allowquery,
+                'forwarders' => $forwarders,
+                'type' => $type,
+                'ffile' => $ffile,
+                'rfile' => $rfile,
+        }
+
+        service {'named':
+                ensure => running,
+                enable => true,
+                require => Package['bind'],
+#               subscribe => File['/etc/named.conf'],
+        }
+
+        service {'firewalld':
+                ensure => running,
+                enable => true,
+        }
+
+        file {'/etc/named.conf':
+                owner => root,
+                group => root,
+                mode => '0554',
+                content => epp('named/named.conf.epp',$vari),
+        }
+        exec {'firewall-cmd':
+                command => 'firewall-cmd --add-service=dns --permanent',
+                path => '/usr/bin',
+                user => 'root',
+        }
+
+        exec {'firewall-cmd --reload':
+                command => 'firewall-cmd --reload',
+                path => '/usr/bin',
+                user => 'root',
+        }
+
+
+}

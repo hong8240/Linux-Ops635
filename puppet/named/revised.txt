@@ -1,0 +1,375 @@
+Lab2:
+
+############### Investigation 1 ########################
+
+##	Clone your Centos blank Vm to create three new Vms (puppet-master, puppet-client1, and puppet-client2).
+
+    Set the hostnames of each, provide them with static addresses, and add them to your DNS service.
+    Configure your puppet-master as the puppet master, and configure puppet-client1 and puppet-client2 as puppet agents.
+    Write a puppet manifest on puppet-master to make a simple change (e.g. installing bind-utils) on both clients. Ensure it works before continuing.
+    Undo the simple change (e.g. remove the package), and ensure that puppet re-applies the change.
+#####
+
+
+
+On server:
+
+yum install https://yum.puppetlabs.com/puppet-release-el-8.noarch.rpm -y
+yum install puppetserver -y
+
+export PATH=/opt/puppetlabs/bin/:$PATH
+vi /etc/puppetlabs/puppet/puppet.conf
+
+[main]
+certname = puppet-server.yhong39.ops
+server = puppet-server.yhong39.ops
+environment = production
+runinterval = 1h
+strict_variables = true
+
+[master]
+dns_alt_names=host.yhong39.ops,host
+
+
+## change memory allocation
+
+free -m
+# to check RAM size, require at least 1088
+
+
+vi /etc/sysconfig/puppetserver
+
+JAVA_ARGS="-Xms512m -Xmx512m ...."
+
+chown -R puppet /var/run/puppetlabs/
+chown -R puppet /var/log/puppetlabs/
+chmod -R 0755 /var/run/puppetlabs/
+
+systemctl start puppetserver
+systemctl enable puppetserver
+
+firewall-cmd --add-service=puppetmaster --permanent
+firewall-cmd --add-port=8140/tcp --permanent
+firewall-cmd --reload
+
+puppet agent -t
+	# check the config file
+
+puppet config print manifest
+	# find the manifest file
+
+puppetserver ca list
+	# view pending node requrests
+
+puppetserver ca sign --all
+	# sign all pending requrest
+
+
+cd /etc/puppetlabs/code/environments/production/manifests
+
+vi site.pp
+
+node default { }
+
+node "puppet-client1.qshao5.ops" {
+        exec {'uninstall bind-utils':
+                command => 'yum remove bind-utils -y',
+                path => '/usr/bin',
+                user => 'root',
+        }
+
+}
+
+node "puppet-client2.qshao5.ops" {
+        exec {'uninstall bind-utils':
+                command => 'yum remove bind-utils -y',
+                path => '/usr/bin',
+                user => 'root',
+        }
+
+}
+
+
+puppet agent --test
+
+puppet apply site.pp
+
+
+On client:
+
+yum install https://yum.puppetlabs.com/puppet-release-el-8.noarch.rpm -y
+yum install puppet -y
+
+export PATH=/opt/puppetlabs/bin/:$PATH
+vi /etc/puppetlabs/puppet/puppet.conf
+
+[main]
+certname = vm1.yhong39.ops
+server = puppet-server.yhong39.ops
+environment = production
+runinterval = 1h
+
+[main]
+certname = vm3.yhong39.ops
+server = puppet-server.yhong39.ops
+environment = production
+runinterval = 1h
+
+
+systemctl start puppet
+systemctl enable puppet
+
+/opt/puppetlabs/bin/puppet resource service puppet ensure=running enable=true
+/opt/puppetlabs/bin/puppet config set certname vm1.yhong39.ops
+/opt/puppetlabs/bin/puppet config set certname vm3.yhong39.ops
+
+puppet agent -t
+	# manually ask to run the manifests
+
+############### Investigation 2 ########################
+
+##  Create a puppet manifest that will configure both puppet agents as web-servers.
+    Your manifest should ensure that both machines meet the following conditions:
+        The httpd package must be installed
+        The httpd service must be enabled and running
+        A simple webpage of your creation must be the DocumentRoot on both machines.
+        The firewall must be allowing traffic to your webservers.
+        Do not worry about providing the configuration file yet.
+    Ensure that even if you manually break your machines (e.g. remove a required package, alter the webpage), they will automatically be fixed by the puppet-master.
+    Add metaparameters to your manifest (if you didn't already have them) to ensure the resources are checked in a sensible order (e.g. the package is installed before puppet tries to start the service).
+########
+
+On server:
+
+cd /etc/puppetlabs/code/environments/production/manifests
+vi site.pp
+
+node default {}
+
+node "puppet-client1.qshao5.ops" {
+	package {'httpd':
+		name => 'httpd',
+		ensure => 'present',
+	}
+
+	service {'httpd':
+		ensure => running,
+		enable => true,
+                require => Package['httpd'],
+	}
+
+	file {'directory index':
+		path => '/var/www/html/index.html',
+		owner => 'apache',
+		group => 'apache',
+		mode => '0554',
+		content => 'hello~',
+	}
+
+	exec {'firewall-cmd':
+		command => 'firewall-cmd --zone=public --add-service=http --permanent',
+		path => '/usr/bin',
+		user => 'root',
+	}
+}
+
+node "puppet-client2.qshao5.ops" {
+        package {'httpd':
+                name => 'httpd',
+                ensure => 'present',
+        }
+
+        service {'httpd':
+                ensure => running,
+                enable => true,
+                require => Package['httpd'],
+	}
+
+        file {'directory index':
+                path => '/var/www/html/index.html',
+                owner => 'apache',
+                group => 'apache',
+                mode => '0554',
+                require => Package['httpd'],
+                content => 'hello~',
+        }
+
+        exec {'firewall-cmd':
+                command => 'firewall-cmd --zone=public --add-service=http --permanent',
+                path => '/usr/bin',
+                user => 'root',
+        }
+}
+
+
+
+
+############### Investigation 3 ########################
+
+##    Create a new directory in your modulepath called webserver.
+    Add a manifest file to your module and place your resources from investigation 2 inside it in a class called webserver.
+    Add the apache configuration file to the files subdirectory of your module and make a minor change to it (e.g the ServerAdmin parameter).
+        Add the configuration file to your class manifest, making sure you include appropriate metaparameters to restart apache if the configuration changes.
+    Modify your main manifest to make both machines implement your webserver class instead of listing every resource in both machines.
+    Ensure that even if you manually break your machines (e.g. remove a required package, alter the webpage), they will automatically be fixed by the puppet-master.
+
+######
+
+On server:
+
+mkdir /etc/puppetlabs/code/modules/webserver
+
+vi class.pp
+
+class webserver{
+	package {'httpd':
+		name => 'httpd',
+		ensure => 'present',
+	}
+
+	service {'httpd':
+		ensure => running,
+		enable => true,
+		require => Package['httpd'],
+		subscribe => File['/etc/httpd/conf/httpd.conf'],
+	}
+
+	file {'/etc/httpd/conf/httpd.conf':
+		owner => 'root',
+		group => 'root',
+		mode => '0644',
+		content => 'puppet:///modules/webserver/httpd.conf',
+	}
+
+	file {'directory index':
+		path => '/var/www/html/index.html',
+		owner => 'apache',
+		group => 'apache',
+		mode => '0554',
+		content => 'hello~',
+	}
+
+	exec {'firewall-cmd':
+		command => 'firewall-cmd --zone=public --add-service=http --permanent',
+		path => '/usr/bin',
+		user => 'root',
+	}
+}
+
+vi site.pp
+
+node default {}
+
+node "puppet-client1.qshao5.ops" {
+        class {'class.pp':
+                $vars = {
+                        'port' => '80',
+                        'serveradmin' => 'root@qshao5.ops',
+                }
+        }
+}
+
+node "puppet-client2.qshao5.ops" {
+        class {'class.pp':
+                $vars = {
+                        'port' => '80',
+                        'serveradmin' => 'root@qshao5.ops',
+                }
+        }
+}
+
+yum install httpd -y
+
+
+cp /etc/httpd/conf/httpd.conf /etc/puppetlabs/code/modules/webserver
+
+cp /etc/puppetlabs/code/environments/production/manifests/site.pp /etc/puppetlabs/code/modules/webserver
+
+On client:
+
+puppet agent -t
+
+
+
+
+############### Investigation 4 ########################
+
+##
+    Convert your apache configuration file to a template:
+        Move it from the files subdirectory to the templates subdirectory
+        Modify it to allow whoever implements your class to provide it with their desired values for two parameters (e.g. Listen and ServerAdmin)
+        Modify your class's manifest file to provide default values for the parameters you chose, and to pass them to the configuration file using epp
+    Ensure that even if you manually break your machines (e.g. remove a required package, alter the webpage), they will automatically be fixed by the puppet-master.
+    Modify your main manifest file to provide a different value for at least on of your chosen parameters.
+    Ensure that even if you manually break your machines (e.g. remove a required package, alter the webpage), they will automatically be fixed by the puppet-master.
+#######
+
+
+On server:
+
+mkdir /etc/puppetlabs/code/modules/webserver/templates
+
+move httpd.conf to templates
+
+vi httpd.conf.epp
+
+Listen *:<%= $port %>
+ServerAdmin <%= $serveradmin %>
+
+
+vi /etc/puppetlabs/puppet/puppet.conf
+
+[main]
+parser=future
+
+
+vi class.pp
+
+class webserver{
+
+        package {'httpd':
+                name => 'httpd',
+                ensure => 'present',
+        }
+
+        service {'httpd':
+                ensure => running,
+                enable => true,
+                require => Package['httpd'],
+                subscribe => File['/etc/httpd/conf/httpd.conf'],
+        }
+
+        file {'/etc/httpd/conf/httpd.conf':
+                owner => 'root',
+                group => 'root',
+                mode => '0644',
+                content => epp('webserver/httpd.conf',$vars),
+        }
+
+        file {'directory index':
+                path => '/var/www/html/index.html',
+                owner => 'apache',
+                group => 'apache',
+                mode => '0554',
+                content => 'hello~',
+        }
+
+        exec {'firewall-cmd':
+                command => 'firewall-cmd --zone=public --add-service=http --permanent',
+                path => '/usr/bin',
+                user => 'root',
+        }
+
+        exec {'firewall-cmd --reload':
+                command => 'firewall-cmd --reload',
+                path => '/usr/bin',
+                user => 'root',
+        }
+}
+
+
+Commands:
+
+scp templates/httpd.conf.epp host:/root/OPS635/lab2/
+scp class.pp host:/root/OPS635/lab2/
+scp manifests/site.pp host:/root/OPS635/lab2/

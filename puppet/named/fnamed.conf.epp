@@ -1,0 +1,19 @@
+<%- |	
+	$allowquery,
+	$recursion
+| -%>
+
+options {
+        listen-on port 53 { 192.168.43.3; };
+        directory       "/var/named";
+        allow-query     { localhost; <%= allowquery %>; };
+        allow-query-cache       { localhost; <%= allowquery %>; };
+        recursion <%= recursion %>;
+};
+
+
+zone "." IN {
+        type hint;
+        file "named.ca";
+};
+
