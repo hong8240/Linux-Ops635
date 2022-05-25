@@ -1,0 +1,24 @@
+Status of volume: Dist
+Gluster process                             TCP Port  RDMA Port  Online  Pid
+------------------------------------------------------------------------------
+Brick vm1:/bricks/dis1/dis_vol              49152     0          Y       3079 
+Brick vm2:/bricks/dis2/dis_vol              49152     0          Y       2730 
+Brick vm3:/bricks/dis3/dis_vol              49152     0          Y       2122 
+ 
+Task Status of Volume Dist
+------------------------------------------------------------------------------
+There are no active volume tasks
+ 
+Status of volume: Rep
+Gluster process                             TCP Port  RDMA Port  Online  Pid
+------------------------------------------------------------------------------
+Brick vm1:/bricks/rep1/rep_vol              49153     0          Y       3190 
+Brick vm2:/bricks/rep2/rep_vol              49153     0          Y       2839 
+Brick vm3:/bricks/rep3/rep_vol              49153     0          Y       2222 
+Self-heal Daemon on localhost               N/A       N/A        Y       3096 
+Self-heal Daemon on vm3.yhong39.ops         N/A       N/A        Y       2271 
+Self-heal Daemon on vm2.yhong39.ops         N/A       N/A        Y       2897 
+ 
+Task Status of Volume Rep
+------------------------------------------------------------------------------
+There are no active volume tasks

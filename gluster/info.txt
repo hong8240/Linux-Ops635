@@ -1,0 +1,33 @@
+ 
+Volume Name: Dis
+Type: Distribute
+Volume ID: 79ec8f93-cbaf-47ab-8711-b7f8d339f99e
+Status: Started
+Snapshot Count: 0
+Number of Bricks: 3
+Transport-type: tcp
+Bricks:
+Brick1: vm1:/bricks/dis1/dis_vol
+Brick2: vm2:/bricks/dis2/dis_vol
+Brick3: vm3:/bricks/dis3/dis_vol
+Options Reconfigured:
+storage.fips-mode-rchecksum: on
+transport.address-family: inet
+nfs.disable: on
+ 
+Volume Name: Rep
+Type: Replicate
+Volume ID: de05da0a-1e95-4cb9-9323-8c42f37e0882
+Status: Started
+Snapshot Count: 0
+Number of Bricks: 1 x 3 = 3
+Transport-type: tcp
+Bricks:
+Brick1: vm1:/bricks/rep1/rep_vol
+Brick2: vm2:/bricks/rep2/rep_vol
+Brick3: vm3:/bricks/rep3/rep_vol
+Options Reconfigured:
+storage.fips-mode-rchecksum: on
+transport.address-family: inet
+nfs.disable: on
+performance.client-io-threads: off
