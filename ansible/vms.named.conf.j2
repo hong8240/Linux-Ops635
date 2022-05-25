@@ -1,0 +1,24 @@
+options {
+        directory "/var/named/";
+        allow-query { 192.168.43.0/24; };
+        forwarders { 192.168.43.3; };
+        listen-on port 53 {{ listen }}
+        recursion yes;
+};
+zone "localhost" {
+        type master;
+        file "named.localhost";
+};
+
+zone "yhong39.ops" {
+        type {{ type }}
+	file "slaves/myzone.txt";
+        masters {{ masters }}
+};
+
+zone "43.168.192.in-addr.arpa." {
+        type {{ type }}
+	file "slaves/revzone.txt";
+        masters {{ masters }}
+};
+        

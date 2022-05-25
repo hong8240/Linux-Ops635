@@ -1,0 +1,108 @@
+- hosts: host.yhong39.ops
+  remote_user: root
+  vars:
+    allowtransfer: '{ localhost; 192.168.43.53; 192.168.43.2; };'
+    listen: '{ 127.0.0.1; 192.168.43.1; };'
+    allowupdate: '{ 192.168.43.53; 192.168.43.2; };'
+    alsonotify: '{ 192.168.43.53; 192.168.43.2; };'
+  tasks:
+  - name: Ensure named installed
+    package:
+      name: bind
+      state: present
+  - name: Copy config file from template to client
+    template:
+      src: /etc/ansible/playbook/master.named.conf.j2
+      dest: /etc/named.conf
+      owner: root
+      group: root
+      mode: '0644'
+    notify:
+      - restart named
+  - name: Allow firewall traffic to dns.
+    firewalld:
+      permanent: yes
+      immediate: yes
+      service: dns
+      state: enabled
+  - name: ensure named is running
+    service:
+      name: named
+      state: started
+      enabled: yes
+  handlers:
+    - name: restart named
+      service:
+        name: named
+        state: restarted
+
+
+- hosts: slaves
+  remote_user: root
+  tasks:
+  - name: Ensure named installed
+    package:
+      name: bind
+      state: present
+  - name: Copy config file from template to client
+    template: 
+      src: /etc/ansible/playbook/vms.named.conf.j2
+      dest: /etc/named.conf
+      owner: root
+      group: root
+      mode: '0644'
+    notify:
+      - restart named
+  - name: Allow firewall traffic to dns.
+    firewalld:
+      permanent: yes
+      immediate: yes
+      service: dns
+      state: enabled
+  - name: ensure named is running
+    service:
+      name: named
+      state: started
+      enabled: yes
+  handlers:
+    - name: restart named
+      service:
+        name: named
+        state: restarted
+
+- hosts: vm3.yhong39.ops
+  remote_user: root
+  vars:
+    listen: '{ 192.168.43.3; }'
+    allowquery: '{ localhost; 192.168.43.0/24; }'
+  tasks:
+  - name: Ensure named installed
+    package:
+      name: bind
+      state: present
+  - name: Copy config file from template to client
+    template:
+      src: /etc/ansible/playbook/forwarder.named.conf.j2
+      dest: /etc/named.conf
+      owner: root
+      group: root
+      mode: '0644'
+    notify:
+      - restart named
+  - name: Allow firewall traffic to dns.
+    firewalld:
+      permanent: yes
+      immediate: yes
+      service: dns
+      state: enabled
+  - name: ensure named is running
+    service:
+      name: named
+      state: started
+      enabled: yes
+  handlers:
+    - name: restart named
+      service:
+        name: named
+        state: restarted
+
