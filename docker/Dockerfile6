@@ -1,0 +1,10 @@
+FROM yhong39/named:0.2
+CMD ["/usr/sbin/init"]
+LABEL version=0.2
+LABEL description="Update forwarder-named configuration"
+LABEL maintainer="yhong39@myseneca.ca"
+RUN rm /etc/named.conf && \
+ rm /var/named/*zone.txt 
+COPY forwarder/ /etc/
+EXPOSE 53/tcp
+

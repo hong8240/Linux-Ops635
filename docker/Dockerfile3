@@ -1,0 +1,16 @@
+FROM yhong39/named:0.1
+CMD ["/usr/sbin/init"]
+LABEL version=0.1
+LABEL description="Update master-named configuration"
+LABEL maintainer="yhong39@myseneca.ca"
+RUN yum update -y && \
+ yum install bind* -y && \
+ yum clean all && \
+ rm /etc/named.conf && \
+ echo "nameserver 192.168.43.3" >> /etc/resolv.conf
+COPY myzone.txt /var/named
+COPY revzone.txt /var/named
+COPY named.conf /etc/
+WORKDIR ["/etc"]
+EXPOSE 53/tcp
+EXPOSE 53/udp
